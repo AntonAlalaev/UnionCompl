@@ -97,6 +97,12 @@
       <Generator>SettingsSingleFileGenerator</Generator>
       <LastGenOutput>Settings.Designer.cs</LastGenOutput>
     </None>
+    <None Include="test_files\К1.xlsx" />
+    <None Include="test_files\К2.xlsx" />
+    <None Include="test_files\К3.xlsx" />
+    <None Include="test_files\К4.xlsx" />
+    <None Include="test_files\К5.xlsx" />
+    <None Include="test_files\К6.xlsx" />
   </ItemGroup>
   <ItemGroup>
     <None Include="App.config" />
