@@ -31,8 +31,7 @@ namespace UnionCompl
 
         private void select_files_button_Click(object sender, RoutedEventArgs e)
         {
-            List<string> files = new List<string>();
-            // Create OpenFileDialog
+            file_names.Clear();
             Microsoft.Win32.OpenFileDialog openFileDlg = new Microsoft.Win32.OpenFileDialog();
 
             openFileDlg.Filter = "XLSX files (*.xlsx)|*.xlsx|XLS files (*.xls)|*.xls";
@@ -56,11 +55,50 @@ namespace UnionCompl
                         file_names.Add(Item);
                     }
                 }
-                string files_1 = "";
-                foreach (string Item in file_names) files_1 += Item + "; ";
-                MessageBox.Show("Выбрали файлы: " + files_1);
+                //string files_1 = "";
+                //foreach (string Item in file_names) files_1 += Item + "; ";
+                //MessageBox.Show("Выбрали файлы: " + files_1);
+                foreach (string Item in file_names)
+                { 
+                    if (!loaded_files_list_view.Items.Contains(Item))
+                        loaded_files_list_view.Items.Add(Item);
+                }
 
             }
+
+        }
+
+        private void clear_files_list_button_Click(object sender, RoutedEventArgs e)
+        {
+            loaded_files_list_view.Items.Clear();
+        }
+
+        private void select_path_button_Click(object sender, RoutedEventArgs e)
+        {
+            DateTime date = DateTime.Now;
+
+            //string file_to_save = "";
+            Microsoft.Win32.OpenFileDialog openFileDlg = new Microsoft.Win32.OpenFileDialog();
+            openFileDlg.FileName = "Групповая комплектация " + date.Year.ToString() + date.Month.ToString() +
+                date.Day.ToString() + ".xlsx";
+            openFileDlg.Filter = "XLSX files (*.xlsx)|*.xlsx|XLS files (*.xls)|*.xls";
+            openFileDlg.Title = "Выберите путь для сохранения файла";
+            openFileDlg.FilterIndex = 0;
+            openFileDlg.CheckFileExists = false;
+
+            // Launch OpenFileDialog by calling ShowDialog method
+            Nullable<bool> result = openFileDlg.ShowDialog();
+
+            // Get the selected file name and display in a TextBox.
+            // Load content of file in a TextBlock
+            if (result == true)
+            {
+                file_export_name.Text = openFileDlg.FileName;
+            }
+        }
+
+        private void save_complect_button_Click(object sender, RoutedEventArgs e)
+        {
 
         }
     }

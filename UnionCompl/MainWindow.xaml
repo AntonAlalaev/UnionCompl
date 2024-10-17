@@ -5,17 +5,45 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:UnionCompl"
         mc:Ignorable="d"
-        Title="MainWindow" Height="450" Width="800">
-    <Grid>
+        Title="Группировка комплектаций" Height="300" Width="600"
+        Background="Black"
+        Foreground="White">
+    <Window.Resources>
+        <Style x:Key="BlackAndWhite">
+            <Setter Property="Control.FontFamily" Value="Segoe UI" />
+            <Setter Property="Control.Background" Value="Black" />
+            <Setter Property="Control.Foreground" Value="Gold" />
+            <Setter Property="Control.Margin" Value="0" />
+        </Style>
+    </Window.Resources>
+    <Grid >
         <Grid.ColumnDefinitions>
-            <ColumnDefinition Width="*"/>
             <ColumnDefinition Width="*"/>
         </Grid.ColumnDefinitions>
         <Grid.RowDefinitions>
             <RowDefinition Height="*"/>
-            <RowDefinition Height="2*"/>
+            <RowDefinition Height="8*"/>
             <RowDefinition Height="*"/>
         </Grid.RowDefinitions>
-        <Button Name ="select_files_button" Click="select_files_button_Click" >Выбрать файлы</Button>
+        <StackPanel Orientation="Horizontal" Grid.Row="0" Grid.Column="0" HorizontalAlignment="Left">
+            <Button Name ="select_files_button" Click="select_files_button_Click" Padding="10,1,10,1"  Style="{StaticResource BlackAndWhite}" >
+                Выбрать файлы
+            </Button>
+            <Button Name ="clear_files_list_button" Click="clear_files_list_button_Click" Padding="10,1,10,1"  Style="{StaticResource BlackAndWhite}">
+                Очистить
+            </Button>
+
+            <TextBox Name ="file_export_name" VerticalAlignment="Center" Width="250" HorizontalAlignment="Center" HorizontalContentAlignment="Center" > Групповая комплектация.xlsx</TextBox>
+            <Button Name ="select_path_button"  Padding="10,1,10,1"  Style="{StaticResource BlackAndWhite}" Click="select_path_button_Click">
+                Куда (путь)
+            </Button>
+            <Button Name ="save_complect_button"  Padding="10,1,10,1"  Style="{StaticResource BlackAndWhite}" Click="save_complect_button_Click">
+                Сохранить
+            </Button>
+
+        </StackPanel>
+        <ListView Name ="loaded_files_list_view" Grid.Row="1" Grid.Column="0" Grid.ColumnSpan="1" Margin="5,6,5,5" Background="Black" Foreground="White">
+            
+        </ListView>
     </Grid>
 </Window>
