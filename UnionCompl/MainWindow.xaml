@@ -5,7 +5,7 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:UnionCompl"
         mc:Ignorable="d"
-        Title="Группировка комплектаций" Height="300" Width="600"
+        Title="Группировка комплектаций" Height="400" Width="600"
         Background="Black"
         Foreground="White">
     <Window.Resources>
@@ -22,8 +22,8 @@
         </Grid.ColumnDefinitions>
         <Grid.RowDefinitions>
             <RowDefinition Height="*"/>
-            <RowDefinition Height="8*"/>
-            <RowDefinition Height="*"/>
+            <RowDefinition Height="4*"/>
+            <RowDefinition Height="4*"/>
         </Grid.RowDefinitions>
         <StackPanel Orientation="Horizontal" Grid.Row="0" Grid.Column="0" HorizontalAlignment="Left">
             <Button Name ="select_files_button" Click="select_files_button_Click" Padding="10,1,10,1"  Style="{StaticResource BlackAndWhite}" >
@@ -45,5 +45,9 @@
         <ListView Name ="loaded_files_list_view" Grid.Row="1" Grid.Column="0" Grid.ColumnSpan="1" Margin="5,6,5,5" Background="Black" Foreground="White">
             
         </ListView>
+        <ListView Name ="log_list_view" Grid.Row="2" Grid.Column="0" Grid.ColumnSpan="1" Margin="5,6,5,5" Background="Black" Foreground="LightBlue">
+
+        </ListView>
+
     </Grid>
 </Window>

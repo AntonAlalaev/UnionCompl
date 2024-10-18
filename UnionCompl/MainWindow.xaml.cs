@@ -99,6 +99,19 @@ namespace UnionCompl
 
         private void save_complect_button_Click(object sender, RoutedEventArgs e)
         {
+            log_list_view.Items.Clear();
+            Dictionary<string, Dictionary<string, int>> all_detail = new Dictionary<string, Dictionary<string, int>>();
+            foreach (string item in loaded_files_list_view.Items)
+            { 
+                Dictionary<string, Dictionary<string, int>> components = new Dictionary<string, Dictionary<string, int>>();
+                ComplReader reader = new ComplReader(item);
+                components = reader.Elements;
+                all_detail = ComplReader.merge_dict(all_detail, components);
+                //components = reader.Elements;
+                //List<string> res = reader.read_file();
+                //foreach (string str in res)
+                //    log_list_view.Items.Add(str);
+            }
 
         }
     }
