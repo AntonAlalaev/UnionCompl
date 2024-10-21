@@ -12,6 +12,7 @@ using System.Windows.Media;
 using System.Windows.Media.Imaging;
 using System.Windows.Navigation;
 using System.Windows.Shapes;
+using System.Xml.Linq;
 
 namespace UnionCompl
 {
@@ -100,18 +101,49 @@ namespace UnionCompl
         private void save_complect_button_Click(object sender, RoutedEventArgs e)
         {
             log_list_view.Items.Clear();
+            
+            // проверяем на наличие файлов в списке
+            if (loaded_files_list_view.Items.Count == 0)
+                return;
+
+            // получаем данные о ширине столбцов, для того, чтобы корректно вывести данные первого файла
+
+            float total_weight = 0f;
+            float total_volume = 0f;
+
+            // Загружаем данные в all_detail
             Dictionary<string, Dictionary<string, int>> all_detail = new Dictionary<string, Dictionary<string, int>>();
             foreach (string item in loaded_files_list_view.Items)
             { 
                 Dictionary<string, Dictionary<string, int>> components = new Dictionary<string, Dictionary<string, int>>();
                 ComplReader reader = new ComplReader(item);
+                reader.read_file();
                 components = reader.Elements;
                 all_detail = ComplReader.merge_dict(all_detail, components);
-                //components = reader.Elements;
-                //List<string> res = reader.read_file();
-                //foreach (string str in res)
-                //    log_list_view.Items.Add(str);
+                total_volume += reader.total_volume;
+                total_weight += reader.total_weight;
             }
+
+            // выводим загруженные данные в log_list_view
+            foreach (string item in all_detail.Keys.OrderBy(x => x).ToList())
+            { 
+                log_list_view.Items.Add(item.ToString());
+                List<string> components = all_detail[item].Keys.OrderBy(x=>x).ToList();                
+                foreach (string name in components)
+                { 
+                    log_list_view.Items.Add(name + ": " + all_detail[item][name]);
+                }
+            }
+
+            // добавляем логи с общим весом и объемом
+            log_list_view.Items.Add("Общий вес: " + total_weight);
+            log_list_view.Items.Add("Общий объем: " + total_volume);
+
+            // клонируем ширину колонок в целевой файл
+            ComplReader.CloneColumnWidths(loaded_files_list_view.Items[0].ToString(), file_export_name.Text);
+            // копируем текст
+            ComplWriter writer = new ComplWriter();
+            writer.CopyRowsWithFormatting(loaded_files_list_view.Items[0].ToString(), file_export_name.Text, 1, 12);
 
         }
     }

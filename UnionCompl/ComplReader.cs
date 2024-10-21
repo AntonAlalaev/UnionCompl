@@ -3,9 +3,11 @@ using OfficeOpenXml.FormulaParsing.Excel.Functions.Text;
 using System;
 using System.Collections.Generic;
 using System.Data;
+using System.Globalization;
 using System.IO;
 using System.Linq;
 using System.Text;
+using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using System.Windows.Automation.Peers;
 
@@ -18,19 +20,36 @@ namespace UnionCompl
         /// </summary>
         public Dictionary<string, Dictionary<string, int>> Elements;
 
+        /// <summary>
+        /// Имя файла Excel с комплектацией
+        /// </summary>
         public string file_name;
+        
+        /// <summary>
+        /// Общий вес
+        /// </summary>
+        public float total_weight;
+
+        public float total_volume;
 
         public ComplReader()
         {
             Elements = new Dictionary<string, Dictionary<string, int>>();
             file_name = "";
+            total_weight = 0f;
+            total_volume = 0f;
         }
 
+        /// <summary>
+        /// Конструктор
+        /// </summary>
+        /// <param name="file_name">имя файла excel</param>
         public ComplReader(string file_name)
         {
             Elements = new Dictionary<string, Dictionary<string, int>>();
-            this.file_name = file_name;
-            //read_file();
+            this.file_name = file_name;            
+            total_weight = 0f;
+            total_volume = 0f;
         }
 
         /// <summary>
@@ -47,10 +66,11 @@ namespace UnionCompl
                     ExcelWorksheet worksheet = package.Workbook.Worksheets[1];
                     int column_count = worksheet.Dimension.End.Column;
                     int row_count = worksheet.Dimension.End.Row;
+                    string directory = "";
 
                     for (int row = 12; row <= row_count; row++)
                     {
-                        string directory = "";
+                        
                         Dictionary<int, string> row_dict = new Dictionary<int, string>();
                         for (int col = 1; col <= column_count; col++)
                         {
@@ -58,6 +78,8 @@ namespace UnionCompl
                                 row_dict.Add(col, worksheet.Cells[row, col].Value.ToString().Trim());
                             //list.Add (" Row:" + row + " column:" + col + " Value:" + worksheet.Cells[row, col].Value.ToString().Trim());
                         }
+                        if (row_dict.Count == 0)
+                            continue;
 
                         Tuple<bool, string> check_dir = check_directory(row_dict);
                         if (check_dir.Item1)
@@ -82,7 +104,7 @@ namespace UnionCompl
                                     Elements[directory].Add(check_pos.Item2, check_pos.Item3);
                                 }
                             }
-                            // если радела еще нет
+                            // если раздела еще нет
                             else
                             {
                                 // создаем позицию
@@ -94,6 +116,19 @@ namespace UnionCompl
                                 Elements.Add(directory, to_add );
                             }
                         }
+                        
+                        Tuple<bool,float> check_wei = cheсk_weight(row_dict);
+                        if (check_wei.Item1) 
+                        {
+                            total_weight += check_wei.Item2;
+                        }
+
+                        Tuple<bool, float> check_vol = cheсk_volume(row_dict);
+                        if (check_vol.Item1)
+                        {
+                            total_volume += check_vol.Item2;
+                        }
+
                     }
                 }
             }
@@ -117,6 +152,7 @@ namespace UnionCompl
                 // отсортируем по возрастанию
                 List<int> column_numbers = row.Keys.OrderBy(x => x).ToList();
                 string position_text = "";
+                
                 //int last_position = column_numbers.Max();
                 // пока оставим жестко позицию 9
                 int last_position = 9;
@@ -129,7 +165,8 @@ namespace UnionCompl
                         position_text += row[item];
                     }
                 }
-
+                
+                // считываем количество
                 int amount = 0;
                 if (int.TryParse(row[last_position], out int number))
                     amount = number;
@@ -156,22 +193,80 @@ namespace UnionCompl
                 return new Tuple<bool, string>(false, "");
             // если значимых ячеек больше чем одна
             if (row.Count == 2)
-                if (row[1] == "")
+                if (row[1] == "" && row.ContainsKey(2))
                     if (!is_string_int(row[2]))
                         return new Tuple<bool, string>(true, row[2]);
             // Если первый символ цифра
             if (is_string_int(row[1]))
                 return new Tuple<bool, string>(false, row[1]);
-
             return new Tuple<bool, string>(false, "false");
         }
 
+        /// <summary>
+        /// Проверяет является ли строка целым числом
+        /// </summary>
+        /// <param name="str">Строка</param>
+        /// <returns>true если является, false - если нет</returns>
         private bool is_string_int(string str)
         {
             if (int.TryParse(str, out int number))
                 return true;
             else
                 return false;
+        }
+
+        /// <summary>
+        /// проверяет является ли строка весом
+        /// </summary>
+        /// <param name="row">Словарь, ключ - номер столбца, значение - текст в ячейке</param>
+        /// <returns>кортеж true, если вес обнаружен и значение, false если нет</returns>
+        private Tuple<bool, float> cheсk_weight(Dictionary<int, string> row)
+        {
+            if (row.Count == 0)
+                return new Tuple<bool, float>(false, 0.0f);
+            if (row.Count == 2)
+                if (row.ContainsKey(2) && row[2].Length > 10)
+                {
+                    string a = row[2].Substring(0, 10);
+                    if (row[2].Substring(0, 10) == "Общий вес:")
+                    {
+                        // распознаем цифры
+                        float? NullableFloat = ExtractNumberFromString(row[2]);
+                        if (NullableFloat.HasValue)
+                        {                                                        
+                            return new Tuple<bool, float>(true, NullableFloat.Value);
+                        }
+                    }                           
+                }
+            return new Tuple<bool, float>(false, 0.0f);
+        }
+
+
+        /// <summary>
+        /// проверяет является ли строка весом
+        /// </summary>
+        /// <param name="row">Словарь, ключ - номер столбца, значение - текст в ячейке</param>
+        /// <returns>кортеж true, если вес обнаружен и значение, false если нет</returns>
+        private Tuple<bool, float> cheсk_volume(Dictionary<int, string> row)
+        {
+            if (row.Count == 0)
+                return new Tuple<bool, float>(false, 0.0f);
+            if (row.Count == 2)
+                if (row.ContainsKey(2) && row[2].Length > 10)
+                {
+                    string a = row[2].Substring(0, 12);
+                    if (row[2].Substring(0, 12) == "Общий объем:")
+                    {
+                        // распознаем цифры
+                        float? NullableFloat = ExtractNumberFromString(row[2]);
+                        if (NullableFloat.HasValue)
+                        {
+                            return new Tuple<bool, float>(true, NullableFloat.Value);
+                        }
+                    }
+                }
+            return new Tuple<bool, float>(false, 0.0f);
+
         }
 
 
@@ -210,6 +305,95 @@ namespace UnionCompl
                 }
             }
             return dict_1;
+        }
+
+        /// <summary>
+        /// Ищет в текстовой строке число и возвращает их во float?
+        /// </summary>
+        /// <param name="input">Текстовая строка</param>
+        /// <returns></returns>
+        public static float? ExtractNumberFromString(string input)
+        {
+            // Regular expression pattern to match both integers and floats
+            // with either '.' or ',' as the decimal separator, considering
+            // the decimal separator might be followed by more digits
+            var numberPattern = new Regex(@"\d+(?:[.,]\d+)?", RegexOptions.CultureInvariant);
+
+            // Find the first occurrence of the pattern in the string
+            var match = numberPattern.Match(input);
+
+            // If a match is found, attempt to convert it to a float
+            if (match.Success)
+            {
+                var numberString = match.Value;
+                // Replace ',' with '.' if ',' was used as the decimal separator
+                // to facilitate conversion to float
+                if (numberString.Contains(","))
+                    numberString = numberString.Replace(",", ".");
+
+                // Attempt to parse the string to a float
+                CultureInfo userCulture = CultureInfo.InvariantCulture; // or get from user preferences
+                if (float.TryParse(numberString, NumberStyles.Float, userCulture, out float number))
+                    return number;
+                else
+                    return null;
+                    //throw new FormatException($"Failed to convert '{numberString}' to a float.");
+            }
+
+            // If no match is found or conversion fails, return null
+            return null;
+        }
+
+
+        /// <summary>
+        /// Клонирует ширину колонок из sourceFilePath в targetFilePath
+        /// </summary>
+        /// <param name="sourceFilePath">Исходный файо</param>
+        /// <param name="targetFilePath">Целевой файл</param>
+        /// <exception cref="FileNotFoundException"></exception>
+        /// <exception cref="InvalidOperationException"></exception>
+        public static void CloneColumnWidths(string sourceFilePath, string targetFilePath)
+        {
+            // Check if source file exists
+            if (!File.Exists(sourceFilePath))
+            {
+                throw new FileNotFoundException("Не найден исходный файл", sourceFilePath);
+            }
+
+            // Load the source Excel file
+            using (var package = new ExcelPackage(new FileInfo(sourceFilePath)))
+            {
+                var sourceWorkbook = package.Workbook;
+                if (sourceWorkbook.Worksheets.Count < 1)
+                {
+                    throw new InvalidOperationException("No worksheets found in the source file.");
+                }
+
+                // Assume we're working with the first worksheet for simplicity
+                var sourceSheet = sourceWorkbook.Worksheets[1];
+
+                // Create a new Excel package for the target file
+                using (var targetPackage = new ExcelPackage())
+                {
+                    var targetWorkbook = targetPackage.Workbook;
+                    var targetSheet = targetWorkbook.Worksheets.Add("Sheet1"); // Name of the new sheet
+
+                    // Iterate through the columns of the source sheet to set widths in the target sheet
+                    for (int column = 1; column <= sourceSheet.Dimension.End.Column; column++)
+                    {
+                        // Get the column width from the source sheet
+                        var columnWidth = sourceSheet.Column(column).Width;
+
+                        // If the width is not set (i.e., it's the default), you might want to handle this differently
+                        // depending on your requirements. Here, we just apply it as is.
+                        targetSheet.Column(column).Width = columnWidth;
+                    }
+
+                    // Save the new Excel file
+                    var targetFileInfo = new FileInfo(targetFilePath);
+                    targetPackage.SaveAs(targetFileInfo);
+                }
+            }
         }
 
     }
