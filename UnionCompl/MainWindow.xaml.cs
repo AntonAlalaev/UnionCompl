@@ -1,4 +1,5 @@
-﻿using System;
+﻿using OfficeOpenXml.FormulaParsing.Excel.Functions.DateTime;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -26,6 +27,9 @@ namespace UnionCompl
         {
             InitializeComponent();
             file_names = new List<string>();
+            DateTime date = DateTime.Now;
+            file_export_name.Text = "Групповая комплектация " + date.Year.ToString() + date.Month.ToString() +
+                date.Day.ToString() + ".xlsx";
         }
 
         private List<string> file_names;
@@ -101,7 +105,10 @@ namespace UnionCompl
         private void save_complect_button_Click(object sender, RoutedEventArgs e)
         {
             log_list_view.Items.Clear();
-            
+
+            string ComplNumbers = "";
+            string PrjNames = "";
+
             // проверяем на наличие файлов в списке
             if (loaded_files_list_view.Items.Count == 0)
                 return;
@@ -122,6 +129,8 @@ namespace UnionCompl
                 all_detail = ComplReader.merge_dict(all_detail, components);
                 total_volume += reader.total_volume;
                 total_weight += reader.total_weight;
+                ComplNumbers += reader.compl_number + "; ";
+                PrjNames += reader.prj_name + "; ";
             }
 
             // выводим загруженные данные в log_list_view
@@ -139,11 +148,9 @@ namespace UnionCompl
             log_list_view.Items.Add("Общий вес: " + total_weight);
             log_list_view.Items.Add("Общий объем: " + total_volume);
 
-            // клонируем ширину колонок в целевой файл
-            ComplReader.CloneColumnWidths(loaded_files_list_view.Items[0].ToString(), file_export_name.Text);
-            // копируем текст
-            ComplWriter writer = new ComplWriter();
-            writer.CopyRowsWithFormatting(loaded_files_list_view.Items[0].ToString(), file_export_name.Text, 1, 12);
+            ComplWriter.write_compl(loaded_files_list_view.Items[0].ToString(), file_export_name.Text, 1, 12, all_detail, total_weight, total_volume, ComplNumbers, PrjNames);
+
+            MessageBox.Show("Поздравляем! Файл с групповой комплектацией записан в \n " + file_export_name.Text + "\n успешно.");
 
         }
     }

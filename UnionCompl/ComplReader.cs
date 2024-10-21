@@ -30,7 +30,20 @@ namespace UnionCompl
         /// </summary>
         public float total_weight;
 
+        /// <summary>
+        /// Общий объем
+        /// </summary>
         public float total_volume;
+
+        /// <summary>
+        /// Номер комплектаций
+        /// </summary>
+        public string compl_number;
+
+        /// <summary>
+        /// Наименование проекта
+        /// </summary>
+        public string prj_name;
 
         public ComplReader()
         {
@@ -38,6 +51,8 @@ namespace UnionCompl
             file_name = "";
             total_weight = 0f;
             total_volume = 0f;
+            compl_number = "";
+            prj_name = "";
         }
 
         /// <summary>
@@ -67,6 +82,13 @@ namespace UnionCompl
                     int column_count = worksheet.Dimension.End.Column;
                     int row_count = worksheet.Dimension.End.Row;
                     string directory = "";
+
+                    // get the compl_number
+                    compl_number = CutStringAfterSymbol(worksheet.Cells[4, 1].Value.ToString(), "№");
+
+                    // get the prj_name
+                    if (worksheet.Cells[5, 3].Value !=null)
+                        prj_name = worksheet.Cells[5, 3].Value.ToString();
 
                     for (int row = 12; row <= row_count; row++)
                     {
@@ -343,6 +365,34 @@ namespace UnionCompl
             // If no match is found or conversion fails, return null
             return null;
         }
+
+
+        /// <summary>
+        /// Cuts the input string at the specified symbol and returns the part after the symbol.
+        /// If the symbol is not found, an empty string is returned.
+        /// </summary>
+        /// <param name="originalString">The string to be cut.</param>
+        /// <param name="cutSymbol">The symbol at which to cut the string.</param>
+        /// <returns>The part of the string after the cut symbol, or an empty string if not found.</returns>
+        public static string CutStringAfterSymbol(string originalString, string cutSymbol)
+        {
+            if (string.IsNullOrEmpty(originalString) || string.IsNullOrEmpty(cutSymbol))
+            {
+                return string.Empty; // Return empty if either string is null or empty
+            }
+
+            int symbolIndex = originalString.IndexOf(cutSymbol);
+
+            // If the symbol is not found, IndexOf returns -1, so return an empty string
+            if (symbolIndex == -1)
+            {
+                return string.Empty;
+            }
+
+            // We add the length of the cutSymbol to the index to start the substring AFTER the symbol
+            return originalString.Substring(symbolIndex + cutSymbol.Length);
+        }
+
 
 
         /// <summary>

@@ -7,6 +7,8 @@ using System.Text;
 using System.Threading.Tasks;
 using OfficeOpenXml.Style;
 using System.Drawing;
+using System.Text.RegularExpressions;
+using System.IO.Packaging;
 
 namespace UnionCompl
 {
@@ -14,10 +16,10 @@ namespace UnionCompl
     {
         public ComplWriter()
         {
-            
+
         }
 
-        public void CopyRowsWithFormatting(string sourceFilePath, string targetFilePath, int rowStart, int rowEnd)
+        public static void write_compl(string sourceFilePath, string targetFilePath, int rowStart, int rowEnd, Dictionary<string, Dictionary<string, int>> elements, float total_weight = 0, float total_volume = 0, string compl_numbers ="", string prj_names ="")
         {
             if (rowStart < 1 || rowEnd < 1 || rowEnd < rowStart)
             {
@@ -29,6 +31,8 @@ namespace UnionCompl
                 throw new FileNotFoundException("Source file not found.", sourceFilePath);
             }
 
+            const string DefaultFont = "Arial";
+            
             using (var package = new ExcelPackage(new FileInfo(sourceFilePath)))
             {
                 ExcelWorkbook sourceWorkbook = package.Workbook;
@@ -40,80 +44,117 @@ namespace UnionCompl
                 // Assume we're working with the first worksheet for simplicity
                 ExcelWorksheet sourceWorksheet = sourceWorkbook.Worksheets[1];
 
-                // Create a new package for the target file
                 using (var targetPackage = new ExcelPackage())
                 {
                     ExcelWorkbook targetWorkbook = targetPackage.Workbook;
                     ExcelWorksheet targetWorksheet = targetWorkbook.Worksheets.Add("Sheet1"); // Name of the sheet in the target file
 
-                    // Copy the header row (assuming you want headers, adjust if not needed)
-                    // This example assumes headers are in row 1, adjust `rowStart` if different
-                    if (rowStart > 1)
+                    int totalRows = sourceWorksheet.Dimension.End.Row;
+                    int totalCols = sourceWorksheet.Dimension.End.Column;
+
+                    for (int column = 1; column <= sourceWorksheet.Dimension.End.Column; column++)
                     {
-                        CopyRow(sourceWorksheet, targetWorksheet, 1, 1, false); // false: Don't merge cells for header
+                        // Get the column width from the source sheet
+                        var columnWidth = sourceWorksheet.Column(column).Width;
+
+                        // If the width is not set (i.e., it's the default), you might want to handle this differently
+                        // depending on your requirements. Here, we just apply it as is.
+                        targetWorksheet.Column(column).Width = columnWidth;
                     }
 
-                    // Copy the specified rows with cell merging
-                    for (int i = rowStart; i <= rowEnd; i++)
-                    {
-                        CopyRow(sourceWorksheet, targetWorksheet, i, i - (rowStart - 1) + (rowStart > 1 ? 1 : 0), true); // true: Merge cells for data rows
-                    }
 
+                    sourceWorksheet.Cells[rowStart, 1, rowEnd, totalCols].Copy(targetWorksheet.Cells[rowStart, 1, rowEnd, totalCols]);
                     // Save the new file
+                    
+                    
+
+                    int current_row = 13;
+                    int position_counter = 1;
+
+                    foreach (string directory in elements.Keys.OrderBy(x => x).ToList())
+                    {
+                        targetWorksheet.Cells[current_row, 1].Value = "";
+
+                        targetWorksheet.Cells[current_row, 1].Style.Border.Top.Style = ExcelBorderStyle.Thin;
+                        targetWorksheet.Cells[current_row, 1].Style.Border.Bottom.Style = ExcelBorderStyle.Thin;
+                        targetWorksheet.Cells[current_row, 1].Style.Border.Left.Style = ExcelBorderStyle.Thin;
+                        targetWorksheet.Cells[current_row, 1].Style.Border.Right.Style = ExcelBorderStyle.Thin;
+
+                        targetWorksheet.Cells[current_row, 2].Value = directory;
+                        targetWorksheet.Cells[current_row, 2].Style.Font.Size = 11;
+                        targetWorksheet.Cells[current_row, 2].Style.Font.Bold = true;
+                        targetWorksheet.Cells[current_row, 2].Style.Font.Name = DefaultFont;                        
+
+                        targetWorksheet.Cells[current_row, 2].Style.HorizontalAlignment = ExcelHorizontalAlignment.Center;
+                        targetWorksheet.Cells[current_row, 2, current_row, 9].Merge = true;
+                        targetWorksheet.Cells[current_row, 2, current_row, 9].Style.Border.Top.Style = ExcelBorderStyle.Thin;
+                        targetWorksheet.Cells[current_row, 2, current_row, 9].Style.Border.Bottom.Style = ExcelBorderStyle.Thin;
+                        targetWorksheet.Cells[current_row, 2, current_row, 9].Style.Border.Left.Style = ExcelBorderStyle.Thin;
+                        targetWorksheet.Cells[current_row, 2, current_row, 9].Style.Border.Right.Style = ExcelBorderStyle.Thin;
+
+
+                        current_row += 1;
+                        foreach (string position in elements[directory].Keys.OrderBy(x => x).ToList())
+                        {
+                            targetWorksheet.Cells[current_row, 1].Style.Font.Name = DefaultFont;
+                            targetWorksheet.Cells[current_row, 1].Style.Font.Size = 10;
+                            targetWorksheet.Cells[current_row, 1].Value = position_counter;
+                            targetWorksheet.Cells[current_row, 1].Style.HorizontalAlignment = ExcelHorizontalAlignment.Center;
+
+                            targetWorksheet.Cells[current_row, 1].Style.Border.Top.Style = ExcelBorderStyle.Thin;
+                            targetWorksheet.Cells[current_row, 1].Style.Border.Bottom.Style = ExcelBorderStyle.Thin;
+                            targetWorksheet.Cells[current_row, 1].Style.Border.Left.Style = ExcelBorderStyle.Thin;
+                            targetWorksheet.Cells[current_row, 1].Style.Border.Right.Style = ExcelBorderStyle.Thin;
+
+
+                            targetWorksheet.Cells[current_row, 2].Style.Font.Name = DefaultFont;
+                            targetWorksheet.Cells[current_row, 2].Style.Font.Size = 10;
+                            targetWorksheet.Cells[current_row, 2].Value = position;
+                            targetWorksheet.Cells[current_row, 2, current_row, 8].Merge = true;
+
+                            targetWorksheet.Cells[current_row, 2, current_row, 8].Style.Border.Top.Style = ExcelBorderStyle.Thin;
+                            targetWorksheet.Cells[current_row, 2, current_row, 8].Style.Border.Bottom.Style = ExcelBorderStyle.Thin;
+                            targetWorksheet.Cells[current_row, 2, current_row, 8].Style.Border.Left.Style = ExcelBorderStyle.Thin;
+                            targetWorksheet.Cells[current_row, 2, current_row, 8].Style.Border.Right.Style = ExcelBorderStyle.Thin;
+
+
+                            targetWorksheet.Cells[current_row, 9].Style.Font.Name = DefaultFont;
+                            targetWorksheet.Cells[current_row, 9].Style.Font.Size = 10;
+                            targetWorksheet.Cells[current_row, 9].Style.HorizontalAlignment = ExcelHorizontalAlignment.Center;
+                            targetWorksheet.Cells[current_row, 9].Value = elements[directory][position];
+
+                            targetWorksheet.Cells[current_row, 9].Style.Border.Top.Style = ExcelBorderStyle.Thin;
+                            targetWorksheet.Cells[current_row, 9].Style.Border.Bottom.Style = ExcelBorderStyle.Thin;
+                            targetWorksheet.Cells[current_row, 9].Style.Border.Left.Style = ExcelBorderStyle.Thin;
+                            targetWorksheet.Cells[current_row, 9].Style.Border.Right.Style = ExcelBorderStyle.Thin;
+
+
+                            current_row += 1;
+                            position_counter += 1;
+                        }
+                    }
+
+                    current_row += 1;
+                    targetWorksheet.Cells[current_row, 2].Style.Font.Name = DefaultFont;
+                    targetWorksheet.Cells[current_row, 2].Style.Font.Size = 10;
+                    targetWorksheet.Cells[current_row, 2].Style.Font.Bold = true;
+                    targetWorksheet.Cells[current_row, 2].Value = "Общий вес: " + total_weight + " кг.";
+                    current_row += 1;
+                    targetWorksheet.Cells[current_row, 2].Style.Font.Name = DefaultFont;
+                    targetWorksheet.Cells[current_row, 2].Style.Font.Size = 10;
+                    targetWorksheet.Cells[current_row, 2].Style.Font.Bold = true;
+                    targetWorksheet.Cells[current_row, 2].Value = "Общий объем:: " + total_volume + " куб.м.";
+
+                    targetWorksheet.Cells[4, 1].Value = "Групповая комплектация №" + compl_numbers;
+                    targetWorksheet.Cells[5, 3].Value = prj_names;
+
                     FileStream targetStream = File.Create(targetFilePath);
                     targetPackage.SaveAs(targetStream);
                     targetStream.Close();
                 }
             }
+
         }
 
-        private void CopyRow(ExcelWorksheet sourceWorksheet, ExcelWorksheet targetWorksheet, int sourceRow, int targetRow, bool mergeCells)
-        {
-            int columnsCount = sourceWorksheet.Dimension.End.Column;
-            for (int i = 1; i <= columnsCount; i++)
-            {
-                // Copy cell value
-                targetWorksheet.Cells[targetRow, i].Value = sourceWorksheet.Cells[sourceRow, i].Value;
-
-                // Copy formatting
-                CopyCellFormatting(sourceWorksheet.Cells[sourceRow, i], targetWorksheet.Cells[targetRow, i]);
-            }
-
-            if (mergeCells)
-            {
-                // Merge cells in the target row (from column 1 to the last column with data)
-                targetWorksheet.Cells[targetRow, 1, targetRow, columnsCount].Merge = true;
-            }
-        }
-
-        private void CopyCellFormatting(ExcelRange sourceCell, ExcelRange targetCell)
-        {
-              
-
-            targetCell.Style.Numberformat = sourceCell.Style.Numberformat;
-            targetCell.Style.Font.Name = sourceCell.Style.Font.Name;
-            targetCell.Style.Font.Size = sourceCell.Style.Font.Size;
-            targetCell.Style.Font.Bold = sourceCell.Style.Font.Bold;
-            targetCell.Style.Font.Italic = sourceCell.Style.Font.Italic;
-            targetCell.Style.HorizontalAlignment = sourceCell.Style.HorizontalAlignment;
-            targetCell.Style.VerticalAlignment = sourceCell.Style.VerticalAlignment;
-
-            // Simplified border settings, directly assigning ExcelColor
-            targetCell.Style.Border.Top.Style = sourceCell.Style.Border.Top.Style;
-            //targetCell.Style.Border.Top.Color = sourceCell.Style.Border.Top.Color; // Direct assignment, no conversion needed
-
-            targetCell.Style.Border.Bottom.Style = sourceCell.Style.Border.Bottom.Style;
-            //targetCell.Style.Border.Bottom.Color = sourceCell.Style.Border.Bottom.Color;
-
-            targetCell.Style.Border.Left.Style = sourceCell.Style.Border.Left.Style;
-            //targetCell.Style.Border.Left.Color = sourceCell.Style.Border.Left.Color;
-
-            targetCell.Style.Border.Right.Style = sourceCell.Style.Border.Right.Style;
-            //targetCell.Style.Border.Right.Color = sourceCell.Style.Border.Right.Color;
-
-            // For Fill (background) color, similar direct assignment
-            targetCell.Style.Fill.PatternType = sourceCell.Style.Fill.PatternType;
-            //targetCell.Style.Fill.BackgroundColor = sourceCell.Style.Fill.BackgroundColor; // Direct assignment
-        }
     }
 }
